@@ -2,59 +2,48 @@ import React, { useState } from 'react';
 
 function App() {
   const [fileName, setFileName] = useState('');
-  const [link, setLink] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [result, setResult] = useState('');
 
-  // Заміни на свій URL Google Apps Script
-  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/ТВОЙ_КОД/exec';
+  // URL твого Apps Script вебдодатку
+  const scriptUrl = 'https://script.google.com/macros/s/AKfycbxNjUWaWtZVxEljrKBl2jln7Bl2HHremqtYslzeVJStI_oMirwRZrFmpZ7KKw8Sv9K8yw/exec';
 
-  const handleCreate = async () => {
-    setLoading(true);
-    setError(null);
-    setLink('');
-    try {
-      const response = await fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userEmail: 'user@example.com', fileName }),
-      });
-      const data = await response.json();
-      if (data.error) {
-        setError(data.error);
-      } else {
-        setLink(data.url);
-      }
-    } catch (err) {
-      setError('Помилка мережі');
+  const createFile = () => {
+    if (!fileName.trim()) {
+      alert('Введіть назву файлу');
+      return;
     }
-    setLoading(false);
+
+    // Формуємо URL з параметром
+    const url = `${scriptUrl}?action=createCopy&fileName=${encodeURIComponent(fileName)}`;
+
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          setResult(`Файл створено: <a href="${data.url}" target="_blank" rel="noopener noreferrer">${data.url}</a>`);
+        } else {
+          setResult('Сталася помилка: ' + data.message);
+        }
+      })
+      .catch(err => setResult('Помилка: ' + err.message));
   };
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Створення нового Excel файлу</h1>
+    <div style={{ padding: 20 }}>
+      <h2>Створення файлу на основі шаблону</h2>
       <input
         type="text"
-        placeholder="Введіть назву файлу"
+        placeholder="Назва нового файлу"
         value={fileName}
         onChange={e => setFileName(e.target.value)}
-        style={{ padding: '0.5rem', width: '300px', marginRight: '1rem' }}
+        style={{ marginRight: 10 }}
       />
-      <button onClick={handleCreate} disabled={loading || !fileName}>
-        {loading ? 'Створюємо...' : 'Створити файл'}
-      </button>
-      {error && <p style={{ color: 'red' }}>Помилка: {error}</p>}
-      {link && (
-        <p>
-          Файл створено!{' '}
-          <a href={link} target="_blank" rel="noopener noreferrer">
-            Відкрити таблицю
-          </a>
-        </p>
-      )}
+      <button onClick={createFile}>Створити</button>
+      <div style={{ marginTop: 20 }} dangerouslySetInnerHTML={{ __html: result }} />
     </div>
   );
 }
 
 export default App;
+
+
